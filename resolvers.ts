@@ -1,54 +1,61 @@
 import { Collection, ObjectId } from "mongodb";
-import { Dinosaur, DinosaurModel } from "./types.ts";
-import { formModelToDinosaur } from "./utils.ts";
+import { Vehicle, VehicleModel, Parts, PartsModel } from "./types.ts";
+import { fromModelToVehicle, fromModelToparts } from "./utils.ts";
+
 
 export const resolvers = {
   Query: {
-    dinosaurs: async (
+    vehicles: async (
       _: unknown,
       __: unknown,
-      context: { DinosaursCollection: Collection<DinosaurModel> },
-    ): Promise<Dinosaur[]> => {
-      const dinosaursModel = await context.DinosaursCollection.find().toArray();
-      return dinosaursModel.map((dinosaurModel) =>
-        formModelToDinosaur(dinosaurModel)
-      );
+      context: { VehicleCollection: Collection<VehicleModel> },
+    ): Promise<Vehicle[]> => {
+      const vehiclesModel = await context.VehicleCollection.find().toArray();
+      return vehiclesModel.map((vehicleModel =>
+        fromModelToVehicle(vehicleModel)
+      ));
     },
     dinosaur: async (
       _: unknown,
       { id }: { id: string },
       context: {
-        DinosaursCollection: Collection<DinosaurModel>;
+        VehicleCollection: Collection<VehicleModel>;
       },
-    ): Promise<Dinosaur | null> => {
-      const dinosaurModel = await context.DinosaursCollection.findOne({
+    ): Promise<Vehicle | null> => {
+      const vehicleModel = await context.VehicleCollection.findOne({
         _id: new ObjectId(id),
       });
-      if (!dinosaurModel) {
+      if (!vehicleModel) {
         return null;
       }
-      return formModelToDinosaur(dinosaurModel);
+      return fromModelToVehicle(vehicleModel);
     },
   },
   Mutation: {
-    addDinosaur: async (
+    addVehicle: async (
       _: unknown,
-      args: { name: string; type: string },
+      args: { name: string, manufacturer: string , year: number},joke:string,parts:Parts,
       context: {
-        DinosaursCollection: Collection<DinosaurModel>;
+        VehicleCollection: Collection<VehicleModel>;
       },
-    ): Promise<Dinosaur> => {
-      const { name, type } = args;
-      const { insertedId } = await context.DinosaursCollection.insertOne({
+    ): Promise<Vehicle> => {
+      const { name, manufacturer, year } = args;
+      const { insertedId } = await context.VehicleCollection.insertOne({
         name,
-        type,
+        manufacturer,
+        year,
+        joke,
+        parts
       });
-      const dinosaurModel = {
+      const vehicleModel = {
         _id: insertedId,
         name,
-        type,
+        manufacturer,
+        year,
+        joke,
+        parts,
       };
-      return formModelToDinosaur(dinosaurModel!);
+      return fromModelToVehicle(vehicleModel!);
     },
     deleteDinosaur: async (
       _: unknown,
