@@ -57,21 +57,42 @@ export const resolvers = {
       };
       return fromModelToVehicle(vehicleModel!);
     },
-    deleteDinosaur: async (
+    addParts: async (
+      _:unknown,
+      args: { name: string, price: number, vehicleId: string},
+      context: {
+        PartsCollection: Collection<PartsModel>;
+      },
+    ): Promise<Parts> => {
+      const {name, price, vehicleId} = args;
+      const {insertedId} = await context.PartsCollection.insertOne({
+        name,
+        price,
+        vehicleId,
+      })
+      const partsModel = {
+        _id: insertedId,
+        name,
+        price,
+        vehicleId,
+      };
+      return fromModelToparts(partsModel!);
+    },
+    deletePart: async (
       _: unknown,
       args: { id: string },
       context: {
-        DinosaursCollection: Collection<DinosaurModel>;
+        PartsCollection: Collection<PartsModel>;
       },
-    ): Promise<Dinosaur | null> => {
+    ): Promise<Parts | null> => {
       const id = args.id;
-      const dinosaurModel = await context.DinosaursCollection.findOneAndDelete({
+      const partsModel = await context.PartsCollection.findOneAndDelete({
         _id: new ObjectId(id),
       });
-      if (!dinosaurModel) {
+      if (!partsModel) {
         return null;
       }
-      return formModelToDinosaur(dinosaurModel);
+      return fromModelToparts(partsModel);
     },
   },
 };
