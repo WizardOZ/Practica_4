@@ -4,7 +4,7 @@ type Vehicle {
   name: String!
   manufacturer: String!
   year: number!
-  joke: String
+  joke: Response
   parts : parts
 }
 

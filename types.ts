@@ -4,7 +4,7 @@ export type VehicleModel = OptionalId<{
   name: string;
   manufacturer: string;
   year: number,
-  joke: string,
+  joke: Response,
   parts: Parts
 }>;
 
@@ -19,7 +19,7 @@ export type Vehicle = {
   name: string;
   manufacturer: string;
   year: number,
-  joke: string,
+  joke: Response,
   parts : Parts,
 };
 

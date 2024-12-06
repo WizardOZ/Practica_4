@@ -2,7 +2,6 @@ import { Collection, ObjectId } from "mongodb";
 import { Vehicle, VehicleModel, Parts, PartsModel } from "./types.ts";
 import { fromModelToVehicle, fromModelToparts } from "./utils.ts";
 
-
 export const resolvers = {
   Query: {
     vehicles: async (
@@ -11,154 +10,133 @@ export const resolvers = {
       context: { VehicleCollection: Collection<VehicleModel> },
     ): Promise<Vehicle[]> => {
       const vehiclesModel = await context.VehicleCollection.find().toArray();
-
-      //Falta lo del fetch
-      return vehiclesModel.map((vehicleModel =>
-        fromModelToVehicle(vehicleModel)
-      ));
+      return vehiclesModel.map((vehicleModel) => fromModelToVehicle(vehicleModel));
     },
+
     vehicle: async (
       _: unknown,
       { id }: { id: string },
-      context: {
-        VehicleCollection: Collection<VehicleModel>;
-      },
+      context: { VehicleCollection: Collection<VehicleModel> },
     ): Promise<Vehicle | null> => {
       const vehicleModel = await context.VehicleCollection.findOne({
         _id: new ObjectId(id),
       });
-      if (!vehicleModel) {
-        return null;
-      }
-
-      //Falta lo del fetch 
-      return fromModelToVehicle(vehicleModel);
+      return vehicleModel ? fromModelToVehicle(vehicleModel) : null;
     },
+
     parts: async (
       _: unknown,
       __: unknown,
-      context: {
-        PartsCollection: Collection<PartsModel>
-      },
+      context: { PartsCollection: Collection<PartsModel> },
     ): Promise<Parts[]> => {
-      const partModel = await context.PartsCollection.find().toArray();
-      return partModel.map((partModel)=> fromModelToparts(partModel));
-  },
-  vehiclesByManufacturer: async(
-    _: unknown,
-    {vehicleId}: {vehicleId:string},
-    context: {
-      VehicleCollection: Collection<VehicleModel>
+      const partsModel = await context.PartsCollection.find().toArray();
+      return partsModel.map((partModel) => fromModelToparts(partModel));
     },
-  ): Promise<Vehicle[]> =>{
 
-    //HACER + falta lo del fetch creo
-
-    return fromModelToVehicle();
-  },
-  partsByVehicle: async (
-    _:unknown,
-    {vehicleId}: {vehicleId: string},
-    context: {
-      PartsCollection: Collection<PartsModel>
+    vehiclesByManufacturer: async (
+      _: unknown,
+      { manufacturer }: { manufacturer: string },
+      context: { VehicleCollection: Collection<VehicleModel> },
+    ): Promise<Vehicle[]> => {
+      const vehiclesModel = await context.VehicleCollection.find({
+        manufacturer,
+      }).toArray();
+      return vehiclesModel.map((vehicleModel) => fromModelToVehicle(vehicleModel));
     },
-  ): Promise<Parts[]> => {
-    const partModel = await context.PartsCollection.find({
-      vehicleId
-    }).toArray();
 
-    return partModel.map((partsModel)=> fromModelToparts(partsModel));
-  },
-  vehiclesByYearRange: async (
-    _: unknown,
-    {startYear, endYear}: {startYear: number, endYear:number},
-    context: {
-      VehicleCollection: Collection<VehicleModel>
+    partsByVehicle: async (
+      _: unknown,
+      { vehicleId }: { vehicleId: string },
+      context: { PartsCollection: Collection<PartsModel> },
+    ): Promise<Parts[]> => {
+      const partsModel = await context.PartsCollection.find({
+        vehicleId,
+      }).toArray();
+      return partsModel.map((partsModel) => fromModelToparts(partsModel));
     },
-  ): Promise<Vehicle[]> => {
 
-
-    //Hacer + falta lo del fetch creo
-
-    return fromModelToVehicle();
+    vehiclesByYearRange: async (
+      _: unknown,
+      { startYear, endYear }: { startYear: number; endYear: number },
+      context: { VehicleCollection: Collection<VehicleModel> },
+    ): Promise<Vehicle[]> => {
+      const vehiclesModel = await context.VehicleCollection.find({
+        year: { $gte: startYear, $lte: endYear },
+      }).toArray();
+      return vehiclesModel.map((vehicleModel) => fromModelToVehicle(vehicleModel));
+    },
   },
+
   Mutation: {
     addVehicle: async (
       _: unknown,
-      args: { name: string, manufacturer: string , year: number},joke:string,parts:Parts,
-      context: {
-        VehicleCollection: Collection<VehicleModel>;
-      },
+      args: { name: string; manufacturer: string; year: number;},joke:Response,parts:Parts,
+      context: { VehicleCollection: Collection<VehicleModel> },
     ): Promise<Vehicle> => {
+      joke = await fetch('https://official-joke-api.appspot.com/random_joke');
       const { name, manufacturer, year } = args;
       const { insertedId } = await context.VehicleCollection.insertOne({
         name,
         manufacturer,
         year,
-        joke,
-        parts
+        parts,
+        joke
       });
       const vehicleModel = {
         _id: insertedId,
         name,
         manufacturer,
         year,
-        joke,
         parts,
+        joke
       };
-      return fromModelToVehicle(vehicleModel!);
+      return fromModelToVehicle(vehicleModel);
     },
+
     addParts: async (
-      _:unknown,
-      args: { name: string, price: number, vehicleId: string},
-      context: {
-        PartsCollection: Collection<PartsModel>;
-      },
+      _: unknown,
+      args: { name: string; price: number; vehicleId: string },
+      context: { PartsCollection: Collection<PartsModel> },
     ): Promise<Parts> => {
-      const {name, price, vehicleId} = args;
-      const {insertedId} = await context.PartsCollection.insertOne({
+      const { name, price, vehicleId } = args;
+      const { insertedId } = await context.PartsCollection.insertOne({
         name,
         price,
         vehicleId,
-      })
+      });
       const partsModel = {
         _id: insertedId,
         name,
         price,
         vehicleId,
       };
-      return fromModelToparts(partsModel!);
+      return fromModelToparts(partsModel);
     },
+
     updateVehicle: async (
       _: unknown,
       { id, name, manufacturer, year }: { id: string; name: string; manufacturer: string; year: number },
-      context: { 
-        VehicleCollection: Collection<VehicleModel> },
+      context: { VehicleCollection: Collection<VehicleModel> },
     ): Promise<Vehicle | null> => {
-      const vehicleModel = await context.VehicleCollection.findOneAndUpdate(
+      const result = await context.VehicleCollection.findOneAndUpdate(
         { _id: new ObjectId(id) },
         { $set: { name, manufacturer, year } },
+        { returnDocument: "after" }, // Return the updated document
       );
+      if (!result) return null;
+      return fromModelToVehicle(result);
+    },
 
-      if (!vehicleModel) return null;
-
-      return fromModelToVehicle(vehicleModel);
-},
     deletePart: async (
       _: unknown,
       args: { id: string },
-      context: {
-        PartsCollection: Collection<PartsModel>;
-      },
+      context: { PartsCollection: Collection<PartsModel> },
     ): Promise<Parts | null> => {
-      const id = args.id;
-      const partsModel = await context.PartsCollection.findOneAndDelete({
-        _id: new ObjectId(id),
+      const result = await context.PartsCollection.findOneAndDelete({
+        _id: new ObjectId(args.id),
       });
-      if (!partsModel) {
-        return null;
-      }
-      return fromModelToparts(partsModel);
+      if (!result) return null;
+      return fromModelToparts(result);
     },
   },
 };
