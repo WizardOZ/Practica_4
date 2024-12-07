@@ -1,7 +1,7 @@
 import { ApolloServer } from "@apollo/server";
 import { schema } from "./schema.ts";
 import { MongoClient } from "mongodb";
-import { VehicleModel } from "./types.ts";
+import { VehicleModel, PartModel } from "./types.ts";
 import { startStandaloneServer } from "@apollo/server/standalone";
 import { resolvers } from "./resolvers.ts";
 
@@ -18,6 +18,7 @@ console.info("Connected to MongoDB");
 
 const mongoDB = mongoClient.db("vehiculos");
 const VehiclesCollection = mongoDB.collection<VehicleModel>("vehiculos");
+const PartsCollection = mongoDB.collection<PartModel>("parts");
 
 const server = new ApolloServer({
   typeDefs: schema,
@@ -25,7 +26,7 @@ const server = new ApolloServer({
 });
 
 const { url } = await startStandaloneServer(server, {
-  context: async () => ({ VehiclesCollection }),
+  context: async () => ({ VehiclesCollection , PartsCollection }),
 });
 
 console.info(`Server ready at ${url}`);
