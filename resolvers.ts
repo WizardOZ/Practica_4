@@ -145,20 +145,37 @@ export const resolvers = {
 
     updateVehicle: async (
       _: unknown,
-      { id, name, manufacturer, year }: { id: string; name: string; manufacturer: string; year: number },
-      context: { VehiclesCollection: Collection<VehicleModel> },
-    ): Promise<Vehicle | null> => {
-      const result = await context.VehiclesCollection.findOneAndUpdate(
-        { _id: new ObjectId(id) },
-        { $set: { name, manufacturer, year } },
-        { returnDocument: "after" },
-      );
+      args: { id: string, name:string, manufacturer:string, year: number},
+      context: {
+          VehicleCollection: Collection<VehicleModel>;
+          PartCollection: Collection<PartsModel>;
+      },
+  ): Promise<Vehicle| null> => {
+      const {id, name, manufacturer, year } = args
+      const joke = await fetchJoke();
+      const result = await context.VehicleCollection.findOne({manufacturer, year})
 
-      if (!result) return null;
+      if ((!name || !manufacturer || !year) || result?.name === name) {
+          return null
+      }
 
-      return fromModelToVehicle(result, [], ""); 
-    },
+      const { modifiedCount } = await context.VehicleCollection.updateOne(
+          { _id: new ObjectId (id) },
+          { $set: {name, manufacturer, year}}
+      )
 
+      if (!modifiedCount) {
+          return null
+      }
+
+      const vModel = {
+          _id: new ObjectId (id),
+          name,
+          manufacturer,
+          year,
+      }
+      return fromModelToVehicle(vModel, [],joke)
+  },
     deleteParts: async (
       _: unknown,
       args: { id: string },
