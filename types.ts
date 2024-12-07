@@ -3,9 +3,7 @@ import { OptionalId } from "mongodb";
 export type VehicleModel = OptionalId<{
   name: string;
   manufacturer: string;
-  year: number,
-  joke: Response,
-  parts: Parts
+  year: number
 }>;
 
 export type PartsModel = OptionalId<{
@@ -19,8 +17,8 @@ export type Vehicle = {
   name: string;
   manufacturer: string;
   year: number,
-  joke: Response,
-  parts : Parts,
+  joke: string,
+  parts : Parts[],
 };
 
 export type Parts = {
